@@ -1,20 +1,23 @@
 import torch
 import torch.nn as nn
 import math
+from PositionalEncoding import RotaryPositionalEncoding
 
 
 class MultiheadAttn(nn.Module):
     def __init__(self,
                  model_dim=512,
                  head_num=8,
-                 attn_type='self',
+                 rotary = False,
                  dropout=0.1,
                  padding_idx=1):
         super(MultiheadAttn, self).__init__()
         self.dim_per_head = model_dim // head_num
         self.model_dim = model_dim
         self.head_num = head_num
-        self.type = attn_type
+        self.rotary = rotary
+        if rotary:
+            self.rope = RotaryPositionalEncoding(dim=self.dim_per_head,base=10000.0,dropout=dropout)
 
         self.dropout = nn.Dropout(p=dropout)
         self.linear_key = nn.Linear(in_features=model_dim, out_features=self.dim_per_head * head_num)
@@ -23,14 +26,17 @@ class MultiheadAttn(nn.Module):
         self.final_linear = nn.Linear(model_dim, self.dim_per_head * head_num, bias=False)
         self.padding_idx = padding_idx
 
-    def shape(self, x):
+    def shape(self, x, kv = False):
         """
         :param x: (tensor) all data ( Batch_size * seq_len * model_dim )
 
         :return: split into N heads: (B*N*sl*model_d//N)
         """
         batch_size = x.size(0)
-        return x.view(batch_size, -1, self.head_num, self.dim_per_head).transpose(1, 2)
+        x = x.view(batch_size, -1, self.head_num, self.dim_per_head).transpose(1, 2)
+        if self.rotary and kv:
+            return self.rope(x)
+        return x
 
     """
         So why [transpose(1,2)] ?
@@ -47,6 +53,8 @@ class MultiheadAttn(nn.Module):
         The shape (N*d//N) essentially still comprises 'd' elements. 
         After Transpose(1,2), the shape becomes (sq, mini_d),
         which contains a different number of elements. :D)
+        -------
+        kv: if the input is Key/Value -> Apply RoPE (but check if we were using RoPE first)
     """
 
     def unshape(self, x):
@@ -60,8 +68,8 @@ class MultiheadAttn(nn.Module):
 
     def process_qkv(self, q, k, v):
         q, k, v = self.linear_query(q), self.linear_key(k), self.linear_value(v)
-        k = self.shape(k)
-        v = self.shape(v)
+        k = self.shape(k,kv=True)
+        v = self.shape(v,True)
         q = self.shape(q)
         return q, k, v
 
@@ -76,7 +84,8 @@ class MultiheadAttn(nn.Module):
         """
         q, k, v = self.process_qkv(q, k, v)
 
-        scores = torch.matmul(q, k.transpose(-1, -2)) / math.sqrt(self.dim_per_head)   # (sq*d_q) @ (d_k * sq)
+        scores = torch.matmul(q, k.transpose(-1, -2)) / math.sqrt(self.dim_per_head)
+        # (bs*h*sq*d_q) mul (bs*h*d_k * sq) ~ (sq*d_q) mul (d_k*sq) d_k = d_q
         """
         After this matmul, the matrix (in each head) which we've just received 
         represents the "link" between Tokens. 
@@ -86,12 +95,12 @@ class MultiheadAttn(nn.Module):
         -> Softmax(dim=-1)
         """
         if mask is not None:
-            mask = mask.unsqueeze(1) #(B,T) -> ()
-            scores = scores.masked_fill(mask == 0, -1e9)
+            mask = mask.unsqueeze(1).unsqueeze(3) #(B,sq) -> (B,1,sq,1)
+            scores = scores.masked_fill(mask == 0, -1e9) #score (b*h*sq*sq)
 
         attn = nn.Softmax(-1)(scores)
         drop_attn = self.dropout(attn)
-        self_attn = torch.matmul(drop_attn, v)  # (sq*sq) @ (sq*d_v) -> (sq @ d_v)
+        self_attn = torch.matmul(drop_attn, v)  # (sq*sq) mul (sq*d_v) -> (sq @ d_v)
         """
         Finally, the self-attention: n_th Token sa[x_n] is a weighted sum of all the values v_n, 
         these weights are those attention scalars we've talked above.
