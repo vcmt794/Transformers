@@ -4,7 +4,9 @@ My Trasformers implementation. Using pytorch.
 
   Attention: Multihead: Have RoPE and KV_cache (continue building, will have FlashAttn).
 
-  LayerNorm: (not yet).
+  LayerNorm: not yet, but i recommend the RMSNorm
+
+  RMSNorm: done
 
   FFN: (not yet, will have MoE).
 
