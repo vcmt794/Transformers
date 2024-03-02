@@ -8,6 +8,6 @@ My Trasformers implementation. Using pytorch.
 
   RMSNorm: done
 
-  FFN: (not yet, will have MoE).
+  FFN: Base FFN use in "Attention is all u need", FFN with SiLU, MoE.
 
   SwishGLU: (not yet).
