@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 import torch
 import torch.nn as nn
@@ -134,14 +134,15 @@ def repeat_kv(x, nrep):
     return x.reshape(bs, kv_hn * nrep, sq, d)
 
 
-def get_pre_seq_length(layer_index: int | None, cache: Optional[List[List[Tensor], List[Tensor], int]] = None):
+def get_pre_seq_length(layer_index: int | None, 
+                       cache: Optional[Tuple[List[Tensor], List[Tensor], int]] = None):
     if len(cache[0]) <= layer_index:  # cache[0] is key_cache
         return 0
     return cache[0][layer_index].shape[-2]
 
 
 def update_cache(new_k: Optional[Tensor], new_v: Optional[Tensor], layer_idx: int = 0,
-                 cache: List[List[Tensor], List[Tensor], int] = None):
+                 cache: Tuple[List[Tensor], List[Tensor], int] = None):
     if layer_idx == 0:
         cache[2] += new_k.shape[-2]
         # Update seen_token, Update at the first layer (we input token at this layer)
@@ -198,9 +199,9 @@ class AdvancedAttn(nn.Module):
 
     def forward(self,
                 x: Tensor,
-                mask: Optional[Tensor[int]] = None,
-                position_ids: Optional[Tensor[int]] = None,
-                past_kv: Optional[List[List[Tensor], List[Tensor], int]] = None):  # K, V, seen_token
+                mask: Optional[Tensor] = None,
+                position_ids: Optional[Tensor] = None,
+                past_kv: Optional[Tuple[List[Tensor], List[Tensor], int]] = None):  # K, V, seen_token
         bs, sq_len = x.size()
 
         q = self.linear_q(x)
