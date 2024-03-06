@@ -4,7 +4,7 @@ import math
 
 
 class FeedForward(nn.Module):  # This is FFN that is used in "Attention is all u need" paper
-    def __init__(self, hidden_dim, ffn_dim, dropout, bias=True):
+    def __init__(self, hidden_dim, ffn_dim, dropout=0, bias=False):
         """
         :param hidden_dim: the dimension of the hidden states
         :param ffn_dim: dimension of the ffn
@@ -20,16 +20,14 @@ class FeedForward(nn.Module):  # This is FFN that is used in "Attention is all u
         return self.w2(self.dropout(nn.functional.relu(self.w1(x))))
 
 
-class SwishFFN(nn.Module):
+class SwishFFN(FeedForward):
     def __init__(self, hidden_dim, ffn_dim):
         """
         :param hidden_dim:
         :param ffn_dim:
         :return: <SiLU(xW1), xW3>W2, no bias is used.
         """
-        super(SwishFFN, self).__init__()
-        self.w1 = nn.Linear(hidden_dim, ffn_dim, bias=False)
-        self.w2 = nn.Linear(ffn_dim, hidden_dim, False)
+        super(SwishFFN, self).__init__(hidden_dim, ffn_dim)
         self.w3 = nn.Linear(hidden_dim, ffn_dim, False)
 
     def forward(self, x):
