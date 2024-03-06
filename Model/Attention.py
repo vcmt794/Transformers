@@ -160,14 +160,13 @@ def update_cache(new_k: Optional[Tensor], new_v: Optional[Tensor], layer_idx: in
 
 class AdvancedAttn(nn.Module):
     def __init__(self,
-                dim=512,
-                head_num=8,
-                padding_idx=0,
-                max_len=2048,
-                rope_theta=10000,
-                kv_head_num=4,
-                layer_idx=6,
-                dropout=0.1):
+                 dim=512,
+                 head_num=8,
+                 max_len=2048,
+                 rope_theta=10000,
+                 kv_head_num=4,
+                 layer_idx=6,
+                 dropout=0.1):
         super(AdvancedAttn, self).__init__()
         self.layer_idx = layer_idx
         self.dim = dim
