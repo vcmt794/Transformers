@@ -4,7 +4,7 @@ import math
 
 
 class FeedForward(nn.Module):  # This is FFN that is used in "Attention is all u need" paper
-    def __int__(self, hidden_dim, ffn_dim, dropout, bias=True):
+    def __init__(self, hidden_dim, ffn_dim, dropout, bias=True):
         """
         :param hidden_dim: the dimension of the hidden states
         :param ffn_dim: dimension of the ffn
@@ -21,7 +21,7 @@ class FeedForward(nn.Module):  # This is FFN that is used in "Attention is all u
 
 
 class SwishFFN(nn.Module):
-    def __int__(self, hidden_dim, ffn_dim):
+    def __init__(self, hidden_dim, ffn_dim):
         """
         :param hidden_dim:
         :param ffn_dim:
@@ -37,8 +37,8 @@ class SwishFFN(nn.Module):
 
 
 class MoELayer(nn.Module):
-    def __int__(self, hidden_dim, ffn_dim, expert_num, top_K):
-        super(MoELayer, self).__int__()
+    def __init__(self, hidden_dim, ffn_dim, expert_num, top_K):
+        super(MoELayer, self).__init__()
         self.expert_num = expert_num
         self.experts = nn.ModuleList([SwishFFN(hidden_dim, ffn_dim) for _ in range(self.expert_num)])
         self.gate = nn.Linear(hidden_dim, self.expert_num, bias=False)
