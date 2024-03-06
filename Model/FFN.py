@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import math
 
 
 class FeedForward(nn.Module):  # This is FFN that is used in "Attention is all u need" paper
