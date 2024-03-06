@@ -3,7 +3,8 @@ from torch import nn
 
 
 class RMSNorm(nn.Module):
-    def __int__(self, dim, eps: float):
+    def __init__(self, dim, eps: float):
+        super().__init__()
         self.weight = nn.Parameter(torch.ones(dim))  # Use this nn.Parameter to assign
         # (tell model that this weight is learnable)
         self.eps = eps
