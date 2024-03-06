@@ -8,10 +8,10 @@ class SequenceTooLongError(Exception):
 
 
 class PositionalEncoding(nn.Module):
-    def __int__(self,
-                dim=512,
-                dropout=0.1,
-                max_len=5000):
+    def __init__(self,
+                 dim=512,
+                 dropout=0.1,
+                 max_len=5000):
         super(PositionalEncoding, self).__init__()
         if dim % 2 != 0:
             msg = "Can't use odd dim"
@@ -62,12 +62,12 @@ so... XD
 
 
 class RotaryPositionalEncoding(nn.Module):
-    def __int__(self,
-                dim,
-                base=10000.0,
-                max_len=2048,
-                device=None):
-        super(RotaryPositionalEncoding, self).__int__()
+    def __init__(self,
+                 dim,
+                 base=10000.0,
+                 max_len=2048,
+                 device=None):
+        super(RotaryPositionalEncoding, self).__init__()
         self.d = dim
         self.max_len = max_len
         self.base = base
@@ -80,8 +80,8 @@ class RotaryPositionalEncoding(nn.Module):
         pos = torch.arange(end=self.max_seq_len_cached, device=device).type_as(self.theta)
         postheta = torch.outer(pos, self.theta)
         emb = torch.cat([postheta, postheta], dim=-1)
-        self.register_buffer("cos_cached", emb.cos().to(float), persistent=False)
-        self.register_buffer("sin_cached", emb.sin().to(float), persistent=False)
+        self.register_buffer("cos_cached", emb.cos().to(torch.float), persistent=False)
+        self.register_buffer("sin_cached", emb.sin().to(torch.float), persistent=False)
 
     def forward(self, x, cur_seq_len):
         if cur_seq_len > self.max_seq_len_cached:
