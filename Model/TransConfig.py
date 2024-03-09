@@ -12,7 +12,9 @@ class TransformersConfig:
                  ffn_bias=False,
                  expert_num=8,
                  top_k=2,
-                 eps=1e-6):
+                 eps=1e-5,
+                 rope_theta=1e6,
+                 kv_headnum=2):
         self.hidden_dim = hidden_dim
         self.head_num = head_num
         self.dropout = dropout
@@ -26,5 +28,7 @@ class TransformersConfig:
         self.expert_num = expert_num
         self.top_k = top_k
         self.eps = eps
+        self.rope_theta = rope_theta
+        self.kv_head_num = kv_headnum
 
 
