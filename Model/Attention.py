@@ -57,7 +57,7 @@ class MultiheadAttn(nn.Module):
         """
         :param x: (tensor) data after splitting
 
-        :return: combine//concat all head together
+        :return: combine//concat all heads together
         """
         batch_size = x.size(0)
         return x.transpose(1, 2).contiguous().view(batch_size, -1, self.head_num * self.dim_per_head)
@@ -144,7 +144,7 @@ def update_cache(new_k: Optional[Tensor], new_v: Optional[Tensor], layer_idx: in
     if layer_idx == 0:
         cache[2] += new_k.shape[-2]
         # Update seen_token, Update at the first layer (we input token at this layer)
-        # In AG model, the output will be brought back to the first layer -> Seen_token will be updated otherwise
+        # In an AG model, the output will be brought back to the first layer -> Seen_token will be updated otherwise
 
     if layer_idx >= len(cache[0]):  # haven't had any k_v cached in this layer yet -> len(k/v_cache +1)
         cache[0].append(new_k)
@@ -158,32 +158,28 @@ def update_cache(new_k: Optional[Tensor], new_v: Optional[Tensor], layer_idx: in
 
 class AdvancedAttn(nn.Module):
     def __init__(self,
-                 dim=512,
-                 head_num=8,
-                 max_len=2048,
-                 rope_theta=10000,
-                 kv_head_num=4,
-                 layer_idx=6,
-                 dropout=0.1):
+                 config: TransformersConfig,
+                 layer_idx: int,
+                 ):
         super(AdvancedAttn, self).__init__()
         self.layer_idx = layer_idx
-        self.dim = dim
-        self.head_num = head_num
-        self.dim_per_head = dim // head_num
-        self.rope_theta = rope_theta
-        self.max_len = max_len
-        self.dropout = dropout
+        self.dim = config.hidden_dim
+        self.head_num = config.head_num
+        self.dim_per_head = self.dim // self.head_num
+        self.rope_theta = config.rope_theta
+        self.max_len = config.max_len
+        self.dropout = config.dropout
         self.rotary = RotaryPositionalEncoding(dim=self.dim_per_head,
                                                base=self.rope_theta,
                                                max_len=self.max_len)
 
         # Check if you use Grouped Queries Attention
-        self.kv_head_num = kv_head_num
+        self.kv_head_num = config.kv_head_num
         self.q_group_num = self.head_num // self.kv_head_num  # if equal 1 -> MultiHA
 
-        self.linear_q = nn.Linear(in_features=dim, out_features=self.dim_per_head * self.head_num, bias=False)
-        self.linear_k = nn.Linear(dim, self.dim_per_head * self.kv_head_num, False)  # (smaller or equal q)
-        self.linear_v = nn.Linear(dim, self.dim_per_head * self.kv_head_num, False)
+        self.linear_q = nn.Linear(in_features=self.dim, out_features=self.dim_per_head * self.head_num, bias=False)
+        self.linear_k = nn.Linear(self.dim, self.dim_per_head * self.kv_head_num, False)  # (smaller or equal q)
+        self.linear_v = nn.Linear(self.dim, self.dim_per_head * self.kv_head_num, False)
         self.last_linear = nn.Linear(self.dim_per_head * self.head_num, self.dim, False)
 
     def shape_(self, x):
