@@ -2,30 +2,28 @@ from typing import Optional, List, Tuple
 
 import torch
 import torch.nn as nn
+from torch import Tensor
 import math
 
-from torch import Tensor
 
+from TransConfig import TransformersConfig
 from PositionalEncoding import RotaryPositionalEncoding, apply_rotary
 
 
 class MultiheadAttn(nn.Module):
     def __init__(self,
-                 model_dim=512,
-                 head_num=8,
-                 dropout=0.1,
-                 padding_idx=1):
+                 config: TransformersConfig):
         super(MultiheadAttn, self).__init__()
-        self.dim_per_head = model_dim // head_num
-        self.model_dim = model_dim
-        self.head_num = head_num
+        self.dim_per_head = config.hidden_dim // config.head_num
+        self.model_dim = config.hidden_dim
+        self.head_num = config.head_num
 
-        self.dropout = nn.Dropout(p=dropout)
-        self.linear_key = nn.Linear(in_features=model_dim, out_features=self.dim_per_head * head_num)
-        self.linear_query = nn.Linear(model_dim, self.dim_per_head * head_num)
-        self.linear_value = nn.Linear(model_dim, self.dim_per_head * head_num)
-        self.final_linear = nn.Linear(model_dim, self.dim_per_head * head_num, bias=False)
-        self.padding_idx = padding_idx
+        self.dropout = nn.Dropout(p=config.dropout)
+        self.linear_key = nn.Linear(in_features=self.model_dim, out_features=self.dim_per_head * self.head_num)
+        self.linear_query = nn.Linear(self.model_dim, self.dim_per_head * self.head_num)
+        self.linear_value = nn.Linear(self.model_dim, self.dim_per_head * self.head_num)
+        self.final_linear = nn.Linear(self.model_dim, self.dim_per_head * self.head_num, bias=False)
+        self.padding_idx = config.padding_idx
 
     def shape(self, x):
         """
@@ -134,7 +132,7 @@ def repeat_kv(x, nrep):
     return x.reshape(bs, kv_hn * nrep, sq, d)
 
 
-def get_pre_seq_length(layer_index: int | None, 
+def get_pre_seq_length(layer_index: Optional[int] = None,
                        cache: Optional[Tuple[List[Tensor], List[Tensor], int]] = None):
     if len(cache[0]) <= layer_index:  # cache[0] is key_cache
         return 0
@@ -156,7 +154,6 @@ def update_cache(new_k: Optional[Tensor], new_v: Optional[Tensor], layer_idx: in
         cache[1][layer_idx] = torch.cat([cache[1][layer_idx], new_v], dim=-2)
 
     return cache[0], cache[1]
-
 
 
 class AdvancedAttn(nn.Module):
@@ -240,6 +237,3 @@ class AdvancedAttn(nn.Module):
         attn_out = self.last_linear(attn_out)
 
         return attn_out, attn, past_kv
-
-
-
