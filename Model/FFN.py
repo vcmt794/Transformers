@@ -14,7 +14,7 @@ class FeedForward(nn.Module):  # This is FFN that is used in "Attention is all u
         """
         super(FeedForward, self).__init__()
         self.w1 = nn.Linear(config.hidden_dim, config.ffn_dim, bias=config.ffn_bias)
-        self.w2 = nn.Linear(self.ffn_dim, self.hidden_dim, config.ffn_bias)
+        self.w2 = nn.Linear(config.ffn_dim, config.hidden_dim, config.ffn_bias)
         self.dropout = nn.Dropout(p=config.ffn_dropout)  # this is optional
 
     def forward(self, x):
