@@ -8,4 +8,4 @@ My Trasformers implementation. Using pytorch.
 
   FFN: Base FFN use in "Attention is all u need", FFN with SiLU, MoE.
 
-  DecoderLayer: the one in "Attention is all u need", the Mixtral one. (Maybe will have Llama)
+  DecoderLayer: the one in "Attention is all u need", the MoE and LLama
