@@ -24,6 +24,20 @@ class MultiheadAttn(nn.Module):
         self.linear_value = nn.Linear(self.model_dim, self.dim_per_head * self.head_num)
         self.final_linear = nn.Linear(self.model_dim, self.dim_per_head * self.head_num, bias=False)
         self.padding_idx = config.padding_idx
+        """
+        "What the duck is Keys, Queries and Values ?"
+        To Understand the concept of K, Q & V and The Attention Mechanism. 
+        We have to go back to the "Searching"/Retrieval concept.
+        
+        For example, when we're Finding something on the Internet. The Searching engine will try to map 
+        your Query (The Thing that we're searching for, e.g text in the search bar, Video's Name)
+        With the Most Similar Key from all Keys inside its Database (e.g Video's Title), 
+        Which each leak to Its own Value (e.g Video).
+        
+        The Attention Mechanism is Simply a Neural Net that's trying to mimic this kind of Process.
+        a.k.a pick a word and Find the most relate word from all words in the sequence (include itself)
+        and return the output that corresponding to this relate word.
+        """
 
     def shape(self, x):
         """
@@ -84,10 +98,11 @@ class MultiheadAttn(nn.Module):
         """
         After this matmul, the matrix (in each head) which we've just received 
         represents the "link" between Tokens. 
-        To more specific: the x_th column show how much "attention" x_th token 
+        To more specific: the x_th row show how much "attention" x_th token 
         pay to all the other token (and also itself).
+        (You can easily realize this because the x_th row is vector that: (<q_x, k_i> | i=0->N)
         For Generalization, we want all these attention(s) are non-negative and sum to 1.
-        -> Softmax(dim=-1)
+        -> Softmax(dim=-1) (soft-max by row)
         """
         if mask is not None:
             mask = mask.unsqueeze(1).unsqueeze(3)  # (B,sq) -> (B,1,sq,1)
@@ -97,9 +112,13 @@ class MultiheadAttn(nn.Module):
         drop_attn = self.dropout(attn)
         self_attn = torch.matmul(drop_attn, v)  # (sq*sq) mul (sq*d_v) -> (sq @ d_v)
         """
-        Finally, the self-attention: n_th Token sa[x_n] is a weighted sum of all the values v_n, 
+        Finally, the self-attention: n_th row_vector sa[x_n] is a ->weighted sum<- of all the values vector v_n, 
         these weights are those attention scalars we've talked above.
+            self_attn[x_n] = sum_{i=0, N} attn_scores[x_n, x_i]*Values_i
+                           = attn_scores[x_n] @ V_matrix (pls note that attn_scores[x_n] is a row vector).
+            --> self_attn_matrix = attn_scores_matrix @ V_matrix
         """
+
         self_attn = self.unshape(self_attn)
         return self_attn,
 
@@ -220,6 +239,10 @@ class AdvancedAttn(nn.Module):
         v = repeat_kv(v, self.q_group_num)
 
         attn = torch.matmul(q, k.transpose(2, 3)) / math.sqrt(self.dim_per_head)
+        """
+        The mask in here is a little specific. 
+        
+        """
         if mask is not None:
             attn = attn + mask
 
