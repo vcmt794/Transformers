@@ -172,7 +172,7 @@ def update_cache(new_k: Optional[Tensor], new_v: Optional[Tensor], layer_idx: in
         cache[0][layer_idx] = torch.cat([cache[0][layer_idx], new_k], dim=-2)
         cache[1][layer_idx] = torch.cat([cache[1][layer_idx], new_v], dim=-2)
 
-    return cache[0], cache[1]
+    return cache[0][layer_idx], cache[1][layer_idx]
 
 
 class AdvancedAttn(nn.Module):
