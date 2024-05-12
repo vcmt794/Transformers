@@ -93,4 +93,4 @@ class MoELayer(nn.Module):
             final_hidden_states = final_hidden_states.index_add_(dim=0, index=token_use,
                                                                  source=cur_hidden_states.to(x.dtype))
         final_hidden_states = final_hidden_states.reshape(bs, sq, dim)
-        return final_hidden_states, router_weights
+        return final_hidden_states, router_logits
